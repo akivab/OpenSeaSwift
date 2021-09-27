@@ -1,3 +1,3 @@
 # OpenSeaJS
 
-A description of this package.
+OpenSeaJS for Swift
