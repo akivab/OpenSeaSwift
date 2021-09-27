@@ -7,30 +7,31 @@ public enum OpenSeaJSError: Error {
 }
 public struct OpenSeaJS {
     let webKitView: WKWebView
-    static func createWebView() -> WKWebView {
-        DispatchQueue.main.sync {
-            return WKWebView()
-        }
+    init() throws {
+        webKitView = WKWebView()
+        try loadJS()
     }
-    init() async throws {
-        webKitView = OpenSeaJS.createWebView()
+
+    func loadJS() throws {
         guard let url = Bundle.module.url(
             forResource: "OpenSeaJS.bundle",
             withExtension: "js"
         ) else {
             throw OpenSeaJSError.generic("URL not found")
         }
-        _ = await runJavascript(try String(contentsOf: url))
+        runJavascript(try String(contentsOf: url))
     }
 
-    func runJavascript(_ str: String) async -> Result<String, Error> {
-        do {
-            guard let result = try await webKitView.evaluateJavaScript(str) as? String else {
-                return .success("couldn't evaluate: \(str)")
+    func runJavascript(
+        _ str: String,
+        callback: ((Result<String, Error>?) -> Void)? = nil
+    ) {
+        webKitView.evaluateJavaScript(str) { res, err in
+            if let err = err {
+                callback?(.failure(err))
+                return
             }
-            return .success(result)
-        } catch let err {
-            return .failure(err)
+            callback?(.success((res as? String) ?? str))
         }
     }
 }
